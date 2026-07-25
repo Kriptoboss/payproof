@@ -1,0 +1,11 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Payproof logo">
+  <rect x="2" y="2" width="44" height="44" rx="12" fill="url(#g1)"/>
+  <path d="M14 32 V16 a2 2 0 0 1 2-2 h12 a2 2 0 0 1 2 2 v10" stroke="#06251C" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+  <path d="M20 34 l4 4 10-11" stroke="#06251C" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="48" y2="48">
+      <stop stop-color="#34F5C5"/>
+      <stop offset="1" stop-color="#4A9FFF"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payproof — Invoices &amp; Verifiable Receipts · Built on Arc</title>
+<meta name="description" content="Payproof lets anyone create stablecoin invoices, get paid in USDC or EURC, and issue verifiable onchain receipts. Built on Arc.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg:#0B0E14; --bg2:#10141D; --card:#151B26; --card2:#1B2230;
+    --line:#242D3D; --text:#EAF0F7; --muted:#8B96A8; --dim:#5C6878;
+    --mint:#34F5C5; --mint-d:#0FBF95; --indigo:#7C8CFF; --amber:#FFC24B; --red:#FF6B6B;
+    --radius:14px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 600px at 80% -10%, rgba(124,140,255,.08), transparent 60%),
+               radial-gradient(900px 500px at 10% 110%, rgba(52,245,197,.06), transparent 60%),
+               var(--bg);
+    color:var(--text); min-height:100vh; line-height:1.55;
+  }
+  h1,h2,h3,.brand{font-family:'Space Grotesk','Inter',sans-serif}
+  a{color:var(--mint);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+
+  /* ---------- Nav ---------- */
+  nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:700;font-size:21px;letter-spacing:.2px}
+  .brand small{display:block;font-family:'Inter';font-weight:500;font-size:10.5px;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-top:1px}
+  .tabs{display:flex;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px}
+  .tabs button{background:none;border:0;color:var(--muted);font:inherit;font-weight:500;font-size:14px;padding:8px 16px;border-radius:9px;cursor:pointer;transition:.15s}
+  .tabs button:hover{color:var(--text)}
+  .tabs button.on{background:var(--card2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line)}
+  .navright{display:flex;align-items:center;gap:10px}
+  .netpill{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:99px;padding:7px 13px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 8px var(--mint)}
+
+  /* ---------- Hero ---------- */
+  .hero{text-align:center;padding:44px 0 34px}
+  .hero h1{font-size:clamp(30px,5vw,46px);font-weight:700;letter-spacing:-.5px;line-height:1.12}
+  .hero h1 em{font-style:normal;background:linear-gradient(92deg,var(--mint),var(--indigo));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{color:var(--muted);max-width:640px;margin:14px auto 0;font-size:16px}
+  .builtline{display:inline-flex;align-items:center;gap:8px;margin-top:20px;font-size:12.5px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:8px 16px;background:var(--card)}
+  .builtline b{color:var(--text);font-weight:600}
+
+  /* ---------- Cards & forms ---------- */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr}}
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin:0 0 6px 2px;letter-spacing:.3px}
+  input,select,textarea{
+    width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:10px;
+    color:var(--text);font:inherit;font-size:14.5px;padding:11px 13px;outline:none;transition:.15s;
+  }
+  input:focus,select:focus,textarea:focus{border-color:var(--mint-d);box-shadow:0 0 0 3px rgba(52,245,197,.12)}
+  textarea{resize:vertical;min-height:70px}
+  .field{margin-bottom:14px}
+  .hint{font-size:12px;color:#5C6878;margin:5px 2px 0}
+  .hint a{color:var(--mint)}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    font:inherit;font-weight:600;font-size:14.5px;border-radius:11px;cursor:pointer;transition:.15s;
+    padding:12px 22px;border:1px solid transparent;
+  }
+  .btn-primary{background:linear-gradient(92deg,var(--mint),#4ADEC0);color:#06251C}
+  .btn-primary:hover{filter:brightness(1.08)}
+  .btn-ghost{background:transparent;border-color:var(--line);color:var(--text)}
+  .btn-ghost:hover{border-color:var(--mint-d);color:var(--mint)}
+  .btn-sm{padding:7px 13px;font-size:13px;border-radius:9px}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-block{width:100%}
+
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;letter-spacing:.5px;border-radius:99px;padding:4px 11px;text-transform:uppercase}
+  .b-unpaid{background:rgba(255,194,75,.12);color:var(--amber);border:1px solid rgba(255,194,75,.25)}
+  .b-paid{background:rgba(52,245,197,.1);color:var(--mint);border:1px solid rgba(52,245,197,.3)}
+  .b-err{background:rgba(255,107,107,.1);color:var(--red);border:1px solid rgba(255,107,107,.3)}
+
+  /* ---------- sections ---------- */
+  .view{display:none;padding-bottom:30px}
+  .view.on{display:block}
+  .split{display:grid;grid-template-columns:1.15fr .85fr;gap:22px;align-items:start}
+  @media(max-width:840px){.split{grid-template-columns:1fr}}
+
+  .featl{list-style:none;display:flex;flex-direction:column;gap:14px}
+  .featl li{display:flex;gap:12px;align-items:flex-start;font-size:14px;color:var(--muted)}
+  .featl b{color:var(--text);font-weight:600;display:block;font-size:14.5px}
+  .fico{flex:0 0 34px;height:34px;border-radius:9px;background:var(--card2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:15px}
+
+  /* amount preview */
+  .amtprev{background:var(--bg2);border:1px dashed var(--line);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--muted);margin-top:4px}
+  .amtprev code{color:var(--mint);font-weight:600;font-size:14px}
+
+  /* ---------- table ---------- */
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{color:var(--muted);font-weight:600;text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.7px;padding:10px 12px;border-bottom:1px solid var(--line)}
+  td{padding:12px;border-bottom:1px solid rgba(36,45,61,.55);vertical-align:middle}
+  tr:last-child td{border-bottom:0}
+  .mono{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12.5px}
+  .empty{color:var(--muted);text-align:center;padding:36px 10px;font-size:14px}
+
+  /* ---------- pay view ---------- */
+  .paycard{max-width:520px;margin:0 auto}
+  .payhead{text-align:center;margin-bottom:20px}
+  .payamt{font-family:'Space Grotesk';font-size:44px;font-weight:700;letter-spacing:-1px;margin:6px 0 2px}
+  .payamt span{font-size:20px;color:var(--muted);font-weight:600;margin-left:6px}
+  .kv{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px solid rgba(36,45,61,.5);font-size:13.5px}
+  .kv:last-child{border-bottom:0}
+  .kv .k{color:var(--muted);white-space:nowrap}
+  .kv .v{text-align:right;word-break:break-all;font-weight:500}
+  .refbox{background:rgba(124,140,255,.08);border:1px solid rgba(124,140,255,.25);border-radius:10px;padding:10px 14px;font-size:12.5px;color:var(--muted);margin:14px 0}
+  .refbox b{color:var(--indigo)}
+
+  /* ---------- modal ---------- */
+  .modal{position:fixed;inset:0;background:rgba(5,8,12,.75);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+  .modal.on{display:flex}
+  .mbox{background:var(--card);border:1px solid var(--line);border-radius:16px;max-width:520px;width:100%;padding:28px;max-height:92vh;overflow:auto}
+  .mbox h3{margin-bottom:6px}
+  .qrwrap{background:#fff;border-radius:12px;padding:14px;width:max-content;margin:16px auto}
+  .linkbox{display:flex;gap:8px;margin-top:12px}
+  .linkbox input{font-size:12.5px;font-family:ui-monospace,Menlo,monospace}
+  .mclose{float:right;background:none;border:0;color:var(--muted);font-size:20px;cursor:pointer;line-height:1}
+  .mclose:hover{color:var(--text)}
+
+  /* ---------- receipt ---------- */
+  .rc{background:#fff;color:#111826;border-radius:12px;padding:26px;font-size:13.5px}
+  .rc h3{color:#111826;display:flex;align-items:center;gap:9px}
+  .rc .kv{border-color:#E7EAF0}
+  .rc .k{color:#66738A}
+  .rc .mono{font-size:11.5px}
+  .rc a{color:#0FBF95}
+  .rc .stamp{display:inline-block;border:2px solid #0FBF95;color:#0FBF95;font-weight:700;letter-spacing:2px;border-radius:8px;padding:3px 12px;font-size:12px;transform:rotate(-3deg);margin-top:8px}
+  .rc .rfoot{color:#8A94A6;font-size:10.5px;margin-top:16px;border-top:1px solid #E7EAF0;padding-top:10px}
+
+  /* ---------- toast / spinner ---------- */
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line);color:var(--text);padding:11px 20px;border-radius:11px;font-size:13.5px;z-index:99;display:none;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.25);border-top-color:var(--mint);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  /* ---------- footer ---------- */
+  footer{border-top:1px solid var(--line);margin-top:40px;padding:26px 0 34px;color:var(--muted);font-size:12px}
+  footer .frow{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  footer .legal{max-width:640px;line-height:1.7;color:#5C6878}
+
+  /* ---------- print ---------- */
+  @media print{
+    body *{visibility:hidden !important}
+    #receiptArea, #receiptArea *{visibility:visible !important}
+    #receiptArea{position:fixed;inset:0;background:#fff}
+    .modal{background:#fff;padding:0}
+    .noprint{display:none !important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav>
+    <div class="brand">
+      <svg width="38" height="38" viewBox="0 0 48 48" fill="none" aria-label="Payproof logo">
+        <rect x="2" y="2" width="44" height="44" rx="12" fill="url(#g1)"/>
+        <path d="M14 32 V16 a2 2 0 0 1 2-2 h12 a2 2 0 0 1 2 2 v10" stroke="#06251C" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+        <path d="M20 34 l4 4 10-11" stroke="#06251C" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <defs><linearGradient id="g1" x1="0" y1="0" x2="48" y2="48">
+          <stop stop-color="#34F5C5"/><stop offset="1" stop-color="#4A9FFF"/>
+        </linearGradient></defs>
+      </svg>
+      <div>Payproof<small>Built on Arc</small></div>
+    </div>
+    <div class="tabs" role="tablist">
+      <button id="tab-create" class="on" onclick="showView('create')">New invoice</button>
+      <button id="tab-list" onclick="showView('list')">My invoices</button>
+      <button id="tab-verify" onclick="showView('verify')">Verify a payment</button>
+    </div>
+    <div class="navright">
+      <div class="netpill"><span class="dot"></span> Arc Testnet</div>
+    </div>
+  </nav>
+
+  <!-- =============== CREATE =============== -->
+  <section id="view-create" class="view on">
+    <div class="hero">
+      <h1>Get paid in stablecoins.<br><em>Prove it forever.</em></h1>
+      <p>Payproof turns any wallet address into an invoicing tool. Create an invoice, share a link or QR, receive USDC or EURC, and hand your client a receipt anyone can verify onchain.</p>
+      <div class="builtline">⛓ <b>Built on Arc Network</b> · dollar-denominated fees, sub-second blocks</div>
+    </div>
+
+    <div class="split">
+      <div class="card">
+        <h3 style="margin-bottom:16px">Create an invoice</h3>
+        <div class="field">
+          <label for="f-to">Receiving wallet address (yours)</label>
+          <input id="f-to" placeholder="0x…" autocomplete="off" spellcheck="false">
+          <div class="hint">Payments go straight to this address. Payproof never holds funds.</div>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label for="f-amt">Amount</label>
+            <input id="f-amt" type="number" min="0.001" step="0.001" placeholder="25.00" oninput="previewAmt()">
+          </div>
+          <div class="field">
+            <label for="f-token">Currency</label>
+            <select id="f-token" onchange="previewAmt()">
+              <option value="USDC">USDC — digital dollar</option>
+              <option value="EURC">EURC — digital euro</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-desc">Description</label>
+          <textarea id="f-desc" maxlength="140" placeholder="Logo design — final delivery"></textarea>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label for="f-issuer">Your name / business (shown to payer)</label>
+            <input id="f-issuer" maxlength="40" placeholder="Studio Nova">
+          </div>
+          <div class="field">
+            <label for="f-payer">Bill to (optional)</label>
+            <input id="f-payer" maxlength="40" placeholder="Acme Ltd.">
+          </div>
+        </div>
+        <div id="amtprev" class="amtprev" style="display:none"></div>
+        <div style="margin-top:18px">
+          <button class="btn btn-primary btn-block" onclick="createInvoice()">Generate invoice link ➜</button>
+        </div>
+      </div>
+
+      <div class="card" style="background:linear-gradient(180deg,var(--card),var(--bg2))">
+        <h3 style="margin-bottom:16px">How it works</h3>
+        <ul class="featl">
+          <li><span class="fico">🔗</span><div><b>Serverless by design</b> The whole invoice travels inside the link — no database, no account, nothing to shut down.</div></li>
+          <li><span class="fico">🧾</span><div><b>Payment reference, onchain</b> Each invoice gets a unique micro-amount signature (like a bank reference code). Payproof scans Arc transfer logs and matches the payment automatically.</div></li>
+          <li><span class="fico">✅</span><div><b>Verifiable receipts</b> Every receipt maps to a transaction hash on Arc — your client, your accountant, anyone can verify it independently.</div></li>
+          <li><span class="fico">⛽</span><div><b>One asset, everything</b> On Arc, gas is paid in USDC — your payer needs exactly one token. No juggling a second coin for fees.</div></li>
+        </ul>
+        <div class="hint" style="margin-top:16px">Currently running on Arc Testnet. Get free test USDC/EURC at <a href="https://faucet.circle.com" target="_blank" rel="noopener">faucet.circle.com</a>.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============== LIST =============== -->
+  <section id="view-list" class="view">
+    <div class="card">
+      <h3 style="margin-bottom:14px">My invoices</h3>
+      <div style="overflow-x:auto">
+        <table id="invtable">
+          <thead><tr>
+            <th>Invoice</th><th>Description</th><th>Amount</th><th>Created</th><th>Status</th><th style="text-align:right">Actions</th>
+          </tr></thead>
+          <tbody id="invrows"></tbody>
+        </table>
+      </div>
+      <div id="invempty" class="empty">No invoices yet — create your first one. They're stored only in this browser.</div>
+    </div>
+  </section>
+
+  <!-- =============== VERIFY =============== -->
+  <section id="view-verify" class="view">
+    <div class="card paycard">
+      <h3 style="margin-bottom:6px">Verify a payment</h3>
+      <p class="hint" style="margin-bottom:14px">Paste any Arc transaction hash. Payproof decodes the stablecoin transfer and renders an independent receipt.</p>
+      <div class="field">
+        <input id="f-txhash" class="mono" placeholder="0x… transaction hash" spellcheck="false">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="verifyTx()">Verify on Arc ➜</button>
+      <div id="verifyout" style="margin-top:18px"></div>
+    </div>
+  </section>
+
+  <!-- =============== PAY =============== -->
+  <section id="view-pay" class="view">
+    <div class="card paycard" id="paybox"></div>
+  </section>
+
+  <footer>
+    <div class="wrap frow">
+      <div>
+        <div class="brand" style="font-size:16px">Payproof</div>
+        <div style="margin-top:6px">Invoices &amp; verifiable receipts.<br>Our app is built on Arc.</div>
+      </div>
+      <div class="legal">
+        Payproof is an independent application built on Arc Network ("Arc"), the stablecoin-native Layer-1 blockchain. Payproof is not affiliated with, endorsed by, or operated by Circle. Arc is a trademark of Circle Internet Group, Inc. and/or its affiliates. Payproof currently runs on Arc Testnet; testnet tokens have no real-world value. Payproof is self-custodial software — it never holds, transmits, or controls user funds.
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- share modal -->
+<div class="modal" id="shareModal">
+  <div class="mbox">
+    <button class="mclose noprint" onclick="closeModal('shareModal')">✕</button>
+    <h3>Invoice ready 🎉</h3>
+    <p class="hint">Send this link (or QR) to your client. When they pay, hit “Check” on the My invoices tab — the match is detected onchain automatically.</p>
+    <div class="qrwrap"><div id="qrbox"></div></div>
+    <div class="linkbox">
+      <input id="sharelink" readonly onclick="this.select()">
+      <button class="btn btn-ghost btn-sm" onclick="copyLink()">Copy</button>
+    </div>
+  </div>
+</div>
+
+<!-- receipt modal -->
+<div class="modal" id="receiptModal">
+  <div class="mbox">
+    <button class="mclose noprint" onclick="closeModal('receiptModal')">✕</button>
+    <div id="receiptArea"></div>
+    <div class="noprint" style="margin-top:16px;display:flex;gap:10px">
+      <button class="btn btn-primary" onclick="window.print()">Print / Save PDF</button>
+      <button class="btn btn-ghost" onclick="closeModal('receiptModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   Payproof — invoices & verifiable receipts, built on Arc.
+   Self-custodial, serverless. All state lives in the URL and
+   in this browser's localStorage. No backend, no keys held.
+   ============================================================ */
+
+const CFG = {
+  chainIdDec: 5042002,
+  chainIdHex: "0x4cef52",
+  chainName: "Arc Testnet",
+  rpcs: [
+    "https://rpc.testnet.arc.network",
+    "https://rpc.blockdaemon.testnet.arc.network",
+    "https://rpc.drpc.testnet.arc.network",
+    "https://rpc.quicknode.testnet.arc.network"
+  ],
+  explorer: "https://testnet.arcscan.app",
+  faucet: "https://faucet.circle.com",
+  // Native gas token on Arc is USDC (18d). App-level transfers use the
+  // official 6-decimal ERC-20 interfaces below (per Arc docs guidance).
+  tokens: {
+    USDC: { addr: "0x3600000000000000000000000000000000000000", dec: 6, sym: "USDC" },
+    EURC: { addr: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", dec: 6, sym: "EURC" }
+  },
+  blockTimeSec: 0.5,
+  maxScanBlocks: 1000000,   // hard cap for log scans (~5.8 days of blocks)
+  chunk: 40000
+};
+
+/* EIP-6963 wallet discovery (MetaMask, Rabby, Coinbase, Rainbow…) */
+const _wallets = [];
+window.addEventListener("eip6963:announceProvider", (e) => {
+  if (e.detail && e.detail.provider && !_wallets.find(w => w.info?.uuid === e.detail.info?.uuid)) _wallets.push(e.detail);
+});
+window.dispatchEvent(new Event("eip6963:requestProvider"));
+function getWallet() {
+  return (_wallets[0] && _wallets[0].provider) || window.ethereum || null;
+}
+function isFileProtocol() { return location.protocol === "file:"; }
+
+const ERC20_ABI = [
+  "function transfer(address to, uint256 value) returns (bool)",
+  "function balanceOf(address) view returns (uint256)",
+  "function decimals() view returns (uint8)",
+  "event Transfer(address indexed from, address indexed to, uint256 value)"
+];
+const TRANSFER_TOPIC = ethers.id("Transfer(address,address,uint256)");
+
+/* ---------------- providers ---------------- */
+let _prov = null, _provIdx = 0;
+function provider() {
+  if (!_prov) _prov = new ethers.JsonRpcProvider(CFG.rpcs[_provIdx], CFG.chainIdDec, { staticNetwork: true });
+  return _prov;
+}
+function rotateProvider() {
+  _provIdx = (_provIdx + 1) % CFG.rpcs.length;
+  _prov = new ethers.JsonRpcProvider(CFG.rpcs[_provIdx], CFG.chainIdDec, { staticNetwork: true });
+  return _prov;
+}
+async function withProvider(fn) {
+  let lastErr;
+  for (let i = 0; i < CFG.rpcs.length; i++) {
+    try { return await fn(provider()); }
+    catch (e) { lastErr = e; rotateProvider(); }
+  }
+  throw lastErr;
+}
+
+/* ---------------- helpers ---------------- */
+const $ = (id) => document.getElementById(id);
+function toast(msg, ms = 3200) {
+  const t = $("toast"); t.innerHTML = msg; t.style.display = "block";
+  clearTimeout(t._h); t._h = setTimeout(() => (t.style.display = "none"), ms);
+}
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function short(a) { return a ? a.slice(0, 6) + "…" + a.slice(-4) : ""; }
+function fmtDate(unix) {
+  return new Date(unix * 1000).toLocaleString("en-GB", {
+    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "UTC"
+  }) + " UTC";
+}
+function b64uEnc(obj) {
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  let bin = ""; bytes.forEach((b) => (bin += String.fromCharCode(b)));
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function b64uDec(str) {
+  let s = str.replace(/-/g, "+").replace(/_/g, "/");
+  while (s.length % 4) s += "=";
+  const bin = atob(s);
+  const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+function store() {
+  try { return JSON.parse(localStorage.getItem("payproof.invoices") || "[]"); }
+  catch { return []; }
+}
+function saveStore(list) {
+  try { localStorage.setItem("payproof.invoices", JSON.stringify(list)); } catch {}
+}
+function updateStored(id, patch) {
+  const list = store();
+  const i = list.findIndex((x) => x.id === id);
+  if (i >= 0) { Object.assign(list[i], patch); saveStore(list); }
+}
+
+/* ---------------- views ---------------- */
+function showView(name) {
+  ["create", "list", "verify", "pay"].forEach((v) => {
+    const el = $("view-" + v); if (el) el.classList.toggle("on", v === name);
+    const tb = $("tab-" + v); if (tb) tb.classList.toggle("on", v === name);
+  });
+  if (name === "list") renderList();
+}
+function closeModal(id) { $(id).classList.remove("on"); }
+
+/* ---------------- invoice creation ---------------- */
+let _pendingRef = null;
+function newRef() {
+  // 101–999, never ending in 0 (trailing zeros get trimmed in decimal display)
+  let r; do { r = 101 + Math.floor(Math.random() * 899); } while (r % 10 === 0);
+  return r;
+}
+
+function previewAmt() {
+  const amt = parseFloat($("f-amt").value);
+  const tok = $("f-token").value;
+  const box = $("amtprev");
+  if (!amt || amt <= 0) { box.style.display = "none"; return; }
+  if (_pendingRef === null) _pendingRef = newRef();
+  const final = finalAmountStr(amt, _pendingRef);
+  box.style.display = "block";
+  box.innerHTML = `Payable amount: <code>${final} ${tok}</code> &nbsp;·&nbsp; the last 3 digits <code>${String(_pendingRef).padStart(3, "0")}</code> are this invoice's unique onchain payment reference.`;
+}
+
+function finalAmountStr(amount, ref) {
+  // amount limited to 3 decimals; ref occupies decimals 4–6 → exact-match fingerprint
+  const base = Math.round(amount * 1000);           // in 10^-3 units
+  const units = BigInt(base) * 1000n + BigInt(ref); // in 10^-6 units
+  return ethers.formatUnits(units, 6);
+}
+
+function createInvoice() {
+  const to = $("f-to").value.trim();
+  const amt = parseFloat($("f-amt").value);
+  const tok = $("f-token").value;
+  const desc = $("f-desc").value.trim();
+  const issuer = $("f-issuer").value.trim();
+  const payer = $("f-payer").value.trim();
+
+  if (!ethers.isAddress(to)) return toast("⚠️ Enter a valid 0x wallet address.");
+  if (!amt || amt < 0.001) return toast("⚠️ Enter an amount of at least 0.001.");
+  if (Math.round(amt * 1000) !== amt * 1000) return toast("⚠️ Use at most 3 decimal places — the rest is reserved for the payment reference.");
+  if (!desc) return toast("⚠️ Add a short description.");
+
+  if (_pendingRef === null) _pendingRef = newRef();
+  const inv = {
+    v: 1,
+    id: "PP-" + Date.now().toString(36).toUpperCase().slice(-4) + Math.random().toString(36).toUpperCase().slice(2, 5),
+    to: ethers.getAddress(to),
+    amt: finalAmountStr(amt, _pendingRef),
+    tok, desc,
+    iss: issuer || "Payproof user",
+    pyr: payer || "",
+    ts: Math.floor(Date.now() / 1000)
+  };
+  _pendingRef = null;
+
+  const list = store();
+  list.unshift({ ...inv, status: "unpaid", tx: null, paidAt: null });
+  saveStore(list);
+
+  const link = location.origin + location.pathname + "#inv=" + b64uEnc(inv);
+  $("sharelink").value = link;
+  $("qrbox").innerHTML = "";
+  try { new QRCode($("qrbox"), { text: link, width: 190, height: 190, colorDark: "#0B0E14", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M }); } catch {}
+  $("shareModal").classList.add("on");
+  previewAmt();
+}
+
+function copyLink() {
+  navigator.clipboard.writeText($("sharelink").value)
+    .then(() => toast("Link copied ✓"))
+    .catch(() => { $("sharelink").select(); document.execCommand("copy"); toast("Link copied ✓"); });
+}
+
+/* ---------------- invoice list ---------------- */
+function renderList() {
+  const list = store();
+  $("invempty").style.display = list.length ? "none" : "block";
+  $("invtable").style.display = list.length ? "table" : "none";
+  $("invrows").innerHTML = list.map((x) => `
+    <tr>
+      <td class="mono">${esc(x.id)}</td>
+      <td>${esc(x.desc)}</td>
+      <td><b>${esc(x.amt)}</b> ${esc(x.tok)}</td>
+      <td style="color:var(--muted)">${fmtDate(x.ts)}</td>
+      <td>${x.status === "paid"
+        ? '<span class="badge b-paid">● Paid</span>'
+        : '<span class="badge b-unpaid">○ Unpaid</span>'}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="copyInvLink('${esc(x.id)}')">Link</button>
+        ${x.status === "paid"
+          ? `<button class="btn btn-ghost btn-sm" onclick="openReceiptFromStore('${esc(x.id)}')">Receipt</button>`
+          : `<button class="btn btn-ghost btn-sm" id="chk-${esc(x.id)}" onclick="checkFromList('${esc(x.id)}')">Check</button>`}
+        <button class="btn btn-ghost btn-sm" title="Remove from this browser" onclick="delInv('${esc(x.id)}')">✕</button>
+      </td>
+    </tr>`).join("");
+}
+function copyInvLink(id) {
+  const x = store().find((i) => i.id === id); if (!x) return;
+  const { status, tx, paidAt, ...inv } = x;
+  const link = location.origin + location.pathname + "#inv=" + b64uEnc(inv);
+  navigator.clipboard.writeText(link).then(() => toast("Invoice link copied ✓"));
+}
+function delInv(id) {
+  saveStore(store().filter((i) => i.id !== id)); renderList();
+}
+async function checkFromList(id) {
+  const x = store().find((i) => i.id === id); if (!x) return;
+  const btn = $("chk-" + id);
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spin"></span>'; }
+  try {
+    const hit = await findPayment(x);
+    if (hit) {
+      updateStored(id, { status: "paid", tx: hit.txHash, paidAt: hit.time });
+      toast("✅ Payment found onchain!");
+    } else {
+      toast("No matching payment yet. (Scanned recent Arc blocks.)");
+    }
+  } catch (e) {
+    console.error(e); toast("⚠️ RPC error while scanning — try again.");
+  }
+  renderList();
+}
+
+/* ---------------- payment detection ----------------
+   Scans ERC-20 Transfer logs on Arc for (token, to, exact value).
+   The exact value carries the invoice's unique reference digits,
+   so a match is cryptographically tied to one specific invoice. */
+async function findPayment(inv) {
+  const tok = CFG.tokens[inv.tok]; if (!tok) return null;
+  const expected = ethers.parseUnits(inv.amt, tok.dec);
+  return withProvider(async (p) => {
+    const latest = await p.getBlockNumber();
+    const age = Math.floor(Date.now() / 1000) - inv.ts;
+    const span = Math.min(CFG.maxScanBlocks, Math.ceil(age / CFG.blockTimeSec) + 14400);
+    const start = Math.max(0, latest - span);
+    let chunk = CFG.chunk;
+    let hi = latest;
+    while (hi >= start) {
+      const lo = Math.max(start, hi - chunk + 1);
+      let logs;
+      try {
+        logs = await p.getLogs({
+          address: tok.addr,
+          fromBlock: lo,
+          toBlock: hi,
+          topics: [TRANSFER_TOPIC, null, ethers.zeroPadValue(inv.to, 32)]
+        });
+      } catch (e) {
+        if (chunk > 2500) { chunk = Math.floor(chunk / 2); continue; } // range too large → shrink
+        throw e;
+      }
+      for (const lg of logs) {
+        const val = ethers.getBigInt(lg.data);
+        if (val === expected) {
+          const blk = await p.getBlock(lg.blockNumber);
+          return {
+            txHash: lg.transactionHash,
+            block: lg.blockNumber,
+            from: ethers.getAddress("0x" + lg.topics[1].slice(26)),
+            time: blk ? Number(blk.timestamp) : Math.floor(Date.now() / 1000)
+          };
+        }
+      }
+      hi = lo - 1;
+    }
+    return null;
+  });
+}
+
+/* ---------------- pay view ---------------- */
+let _payInv = null;
+function renderPay(inv) {
+  _payInv = inv;
+  const t = CFG.tokens[inv.tok] || CFG.tokens.USDC;
+  const ref = inv.amt.replace(".", "").slice(-3);
+  $("paybox").innerHTML = `
+    <div class="payhead">
+      <div class="hint" style="letter-spacing:1px;text-transform:uppercase">Invoice ${esc(inv.id)} · from</div>
+      <h2 style="margin-top:2px">${esc(inv.iss)}</h2>
+      <div class="payamt">${esc(inv.amt)}<span>${esc(t.sym)}</span></div>
+      <div id="paystatus"><span class="badge b-unpaid">○ Awaiting payment</span></div>
+    </div>
+    <div class="kv"><div class="k">Description</div><div class="v">${esc(inv.desc)}</div></div>
+    ${inv.pyr ? `<div class="kv"><div class="k">Billed to</div><div class="v">${esc(inv.pyr)}</div></div>` : ""}
+    <div class="kv"><div class="k">Pay to</div><div class="v mono">${esc(inv.to)}</div></div>
+    <div class="kv"><div class="k">Network</div><div class="v">Arc Testnet · fees paid in USDC</div></div>
+    <div class="kv"><div class="k">Issued</div><div class="v">${fmtDate(inv.ts)}</div></div>
+    <div class="refbox">🔎 The final digits <b>${esc(ref)}</b> are this invoice's unique payment reference. Pay the <b>exact amount</b> so the payment can be matched onchain automatically.</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+      <button class="btn btn-primary btn-block" id="paybtn" onclick="payNow()">Connect wallet &amp; pay ${esc(inv.amt)} ${esc(t.sym)}</button>
+      <button class="btn btn-ghost btn-block" id="paychk" onclick="checkPayView()">I already paid — check status</button>
+    </div>
+    <div class="hint" style="margin-top:12px;text-align:center">Need test funds? <a href="${CFG.faucet}" target="_blank" rel="noopener">Get free testnet ${esc(t.sym)} from the Circle faucet</a>.</div>
+    <div id="payout" style="margin-top:14px"></div>`;
+  if (isFileProtocol()) {
+    $("payout").innerHTML = `<div class="refbox">⚠️ Opened as a local file (<b>file://</b>) — wallets like MetaMask can't connect here. Run <code>python -m http.server</code> in this folder and open <code>http://localhost:8000</code>, or host the file online. Status checking &amp; verification still work.</div>`;
+  }
+  showView("pay");
+  checkPayView(true); // silent auto-check on load
+}
+
+async function ensureArcNetwork(eth) {
+  try {
+    await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CFG.chainIdHex }] });
+  } catch (e) {
+    if (e && (e.code === 4902 || String(e.message || "").includes("Unrecognized"))) {
+      await eth.request({
+        method: "wallet_addEthereumChain",
+        params: [{
+          chainId: CFG.chainIdHex,
+          chainName: CFG.chainName,
+          rpcUrls: [CFG.rpcs[0]],
+          nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
+          blockExplorerUrls: [CFG.explorer]
+        }]
+      });
+      await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CFG.chainIdHex }] });
+    } else { throw e; }
+  }
+}
+
+async function payNow() {
+  const inv = _payInv; if (!inv) return;
+  const eth = getWallet();
+  if (!eth) {
+    $("payout").innerHTML = isFileProtocol()
+      ? `<div class="refbox">⚠️ This page was opened as a local file (<b>file://</b>). Browser wallets like MetaMask only work on <b>http/https</b> pages. Serve it locally (e.g. <code>python -m http.server</code> → open <code>http://localhost:8000</code>) or host it on GitHub Pages / Netlify, then reopen the link.</div>`
+      : `<div class="refbox">No browser wallet detected. Install <a href="https://metamask.io/download/" target="_blank" rel="noopener">MetaMask</a>, then reopen this link.</div>`;
+    return;
+  }
+  const btn = $("paybtn");
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Waiting for wallet…';
+  try {
+    await eth.request({ method: "eth_requestAccounts" });
+    await ensureArcNetwork(eth);
+    const bp = new ethers.BrowserProvider(eth);
+    const signer = await bp.getSigner();
+    const t = CFG.tokens[inv.tok];
+    const c = new ethers.Contract(t.addr, ERC20_ABI, signer);
+    const value = ethers.parseUnits(inv.amt, t.dec);
+
+    btn.innerHTML = '<span class="spin"></span> Confirm in wallet…';
+    const tx = await c.transfer(inv.to, value);
+    btn.innerHTML = '<span class="spin"></span> Settling on Arc…';
+    const rc = await tx.wait();
+
+    updateStored(inv.id, { status: "paid", tx: rc.hash, paidAt: Math.floor(Date.now() / 1000) });
+    $("paystatus").innerHTML = '<span class="badge b-paid">● Paid</span>';
+    btn.style.display = "none"; $("paychk").style.display = "none";
+    $("payout").innerHTML = `
+      <div class="refbox" style="border-color:rgba(52,245,197,.35);background:rgba(52,245,197,.07)">
+        ✅ Payment settled. Tx:
+        <a class="mono" href="${CFG.explorer}/tx/${rc.hash}" target="_blank" rel="noopener">${short(rc.hash)}</a>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="openReceiptFromTx('${rc.hash}')">View &amp; download receipt 🧾</button>`;
+    toast("✅ Paid — settled in seconds on Arc.");
+  } catch (e) {
+    console.error(e);
+    const msg = e && e.code === "ACTION_REJECTED" ? "Transaction rejected in wallet."
+      : (e && /insufficient funds/i.test(String(e.message)) ? "Insufficient balance — remember gas is paid in USDC on Arc."
+      : "Payment failed — " + (e.shortMessage || e.message || "unknown error").slice(0, 120));
+    toast("⚠️ " + esc(msg), 5000);
+    btn.disabled = false; btn.innerHTML = "Connect wallet & pay " + inv.amt + " " + inv.tok;
+  }
+}
+
+async function checkPayView(silent) {
+  const inv = _payInv; if (!inv) return;
+  const btn = $("paychk");
+  if (!silent && btn) { btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Scanning Arc…'; }
+  try {
+    const hit = await findPayment(inv);
+    if (hit) {
+      updateStored(inv.id, { status: "paid", tx: hit.txHash, paidAt: hit.time });
+      $("paystatus").innerHTML = '<span class="badge b-paid">● Paid</span>';
+      const pb = $("paybtn"); if (pb) pb.style.display = "none";
+      if (btn) btn.style.display = "none";
+      $("payout").innerHTML = `
+        <div class="refbox" style="border-color:rgba(52,245,197,.35);background:rgba(52,245,197,.07)">
+          ✅ Payment found onchain. Tx:
+          <a class="mono" href="${CFG.explorer}/tx/${hit.txHash}" target="_blank" rel="noopener">${short(hit.txHash)}</a>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="openReceiptFromTx('${hit.txHash}')">View &amp; download receipt 🧾</button>`;
+    } else if (!silent) {
+      toast("No matching payment found yet.");
+    }
+  } catch (e) { if (!silent) toast("⚠️ RPC error — try again."); }
+  if (btn) { btn.disabled = false; btn.innerHTML = "I already paid — check status"; }
+}
+
+/* ---------------- receipts ---------------- */
+function receiptHTML(d) {
+  return `
+  <div class="rc">
+    <h3>
+      <svg width="26" height="26" viewBox="0 0 48 48" fill="none"><rect x="2" y="2" width="44" height="44" rx="12" fill="#0FBF95"/><path d="M20 34 l4 4 10-11" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M14 32 V16 a2 2 0 0 1 2-2 h12 a2 2 0 0 1 2 2 v10" stroke="#fff" stroke-width="3.2" stroke-linecap="round" fill="none"/></svg>
+      Payment receipt
+    </h3>
+    <div class="stamp">SETTLED ONCHAIN</div>
+    <div style="margin-top:14px">
+      ${d.invId ? `<div class="kv"><div class="k">Invoice</div><div class="v mono">${esc(d.invId)}</div></div>` : ""}
+      ${d.desc ? `<div class="kv"><div class="k">Description</div><div class="v">${esc(d.desc)}</div></div>` : ""}
+      <div class="kv"><div class="k">Amount</div><div class="v"><b>${esc(d.amount)} ${esc(d.token)}</b></div></div>
+      ${d.issuer ? `<div class="kv"><div class="k">Payee</div><div class="v">${esc(d.issuer)}</div></div>` : ""}
+      <div class="kv"><div class="k">From</div><div class="v mono">${esc(d.from)}</div></div>
+      <div class="kv"><div class="k">To</div><div class="v mono">${esc(d.to)}</div></div>
+      <div class="kv"><div class="k">Date</div><div class="v">${fmtDate(d.time)}</div></div>
+      <div class="kv"><div class="k">Network</div><div class="v">Arc Testnet (chain 5042002)</div></div>
+      <div class="kv"><div class="k">Block</div><div class="v mono">${d.block}</div></div>
+      <div class="kv"><div class="k">Transaction</div><div class="v mono"><a href="${CFG.explorer}/tx/${esc(d.txHash)}" target="_blank" rel="noopener">${esc(d.txHash)}</a></div></div>
+    </div>
+    <div class="rfoot">
+      Generated by Payproof — an independent application built on Arc. Anyone can verify this receipt by looking up the transaction hash above on any Arc explorer. Arc is a trademark of Circle Internet Group, Inc. and/or its affiliates. Testnet transaction — no real-world value.
+    </div>
+  </div>`;
+}
+
+async function txToReceipt(txHash, invMeta) {
+  return withProvider(async (p) => {
+    const rc = await p.getTransactionReceipt(txHash);
+    if (!rc) throw new Error("Transaction not found on Arc.");
+    const known = Object.values(CFG.tokens).map((t) => t.addr.toLowerCase());
+    const lg = rc.logs.find((l) => l.topics[0] === TRANSFER_TOPIC && known.includes(l.address.toLowerCase()));
+    if (!lg) throw new Error("No USDC/EURC transfer found in this transaction.");
+    const tok = Object.values(CFG.tokens).find((t) => t.addr.toLowerCase() === lg.address.toLowerCase());
+    const blk = await p.getBlock(rc.blockNumber);
+    return {
+      invId: invMeta?.id || "", desc: invMeta?.desc || "", issuer: invMeta?.iss || "",
+      amount: ethers.formatUnits(ethers.getBigInt(lg.data), tok.dec),
+      token: tok.sym,
+      from: ethers.getAddress("0x" + lg.topics[1].slice(26)),
+      to: ethers.getAddress("0x" + lg.topics[2].slice(26)),
+      time: blk ? Number(blk.timestamp) : Math.floor(Date.now() / 1000),
+      block: rc.blockNumber, txHash
+    };
+  });
+}
+
+async function openReceiptFromTx(txHash) {
+  toast('<span class="spin"></span> Building receipt…', 8000);
+  try {
+    const meta = _payInv || store().find((i) => i.tx === txHash);
+    const d = await txToReceipt(txHash, meta);
+    $("receiptArea").innerHTML = receiptHTML(d);
+    $("receiptModal").classList.add("on");
+    $("toast").style.display = "none";
+  } catch (e) { toast("⚠️ " + esc(e.message || "Could not build receipt.")); }
+}
+
+async function openReceiptFromStore(id) {
+  const x = store().find((i) => i.id === id);
+  if (!x || !x.tx) return toast("No transaction recorded for this invoice.");
+  _payInv = null;
+  try {
+    const d = await txToReceipt(x.tx, x);
+    $("receiptArea").innerHTML = receiptHTML(d);
+    $("receiptModal").classList.add("on");
+  } catch (e) { toast("⚠️ " + esc(e.message)); }
+}
+
+async function verifyTx() {
+  const h = $("f-txhash").value.trim();
+  if (!/^0x[0-9a-fA-F]{64}$/.test(h)) return toast("⚠️ Enter a valid 66-character transaction hash.");
+  $("verifyout").innerHTML = '<div class="empty"><span class="spin"></span> Querying Arc…</div>';
+  try {
+    const d = await txToReceipt(h, null);
+    $("verifyout").innerHTML = receiptHTML(d) +
+      `<button class="btn btn-ghost btn-block" style="margin-top:12px" onclick="printVerify()">Print / Save PDF</button>`;
+    window._lastVerify = d;
+  } catch (e) {
+    $("verifyout").innerHTML = `<div class="refbox" style="border-color:rgba(255,107,107,.35)">⚠️ ${esc(e.message || "Lookup failed.")}</div>`;
+  }
+}
+function printVerify() {
+  if (!window._lastVerify) return;
+  $("receiptArea").innerHTML = receiptHTML(window._lastVerify);
+  $("receiptModal").classList.add("on");
+}
+
+/* ---------------- boot ---------------- */
+(function boot() {
+  const m = location.hash.match(/#inv=([A-Za-z0-9_-]+)/);
+  if (m) {
+    try {
+      const inv = b64uDec(m[1]);
+      if (inv && inv.v === 1 && ethers.isAddress(inv.to) && CFG.tokens[inv.tok] && /^\d+(\.\d{1,6})?$/.test(inv.amt)) {
+        renderPay(inv);
+        return;
+      }
+    } catch (e) { console.warn("Bad invoice payload", e); }
+    toast("⚠️ This invoice link is invalid or corrupted.");
+  }
+  showView("create");
+})();
+window.addEventListener("hashchange", () => location.reload());
+</script>
+</body>
+</html>
