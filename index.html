@@ -374,13 +374,14 @@ const TRANSFER_TOPIC = ethers.id("Transfer(address,address,uint256)");
 
 /* ---------------- providers ---------------- */
 let _prov = null, _provIdx = 0;
+const ARC_NET = ethers.Network.from({ name: "arc-testnet", chainId: CFG.chainIdDec });
 function provider() {
-  if (!_prov) _prov = new ethers.JsonRpcProvider(CFG.rpcs[_provIdx], CFG.chainIdDec, { staticNetwork: true });
+  if (!_prov) _prov = new ethers.JsonRpcProvider(CFG.rpcs[_provIdx], ARC_NET, { staticNetwork: ARC_NET });
   return _prov;
 }
 function rotateProvider() {
   _provIdx = (_provIdx + 1) % CFG.rpcs.length;
-  _prov = new ethers.JsonRpcProvider(CFG.rpcs[_provIdx], CFG.chainIdDec, { staticNetwork: true });
+  _prov = new ethers.JsonRpcProvider(CFG.rpcs[_provIdx], ARC_NET, { staticNetwork: ARC_NET });
   return _prov;
 }
 async function withProvider(fn) {
