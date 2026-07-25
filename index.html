@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Payproof — Invoices &amp; Verifiable Receipts · Built on Arc</title>
 <meta name="description" content="Payproof lets anyone create stablecoin invoices, get paid in USDC or EURC, and issue verifiable onchain receipts. Built on Arc.">
+<link rel="canonical" href="https://pay-proof.xyz/">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<meta property="og:title" content="Payproof — Invoices &amp; Verifiable Receipts">
+<meta property="og:description" content="Create stablecoin invoices, get paid in USDC or EURC on Arc, and issue receipts anyone can verify onchain.">
+<meta property="og:url" content="https://pay-proof.xyz/">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://pay-proof.xyz/logo.svg">
+<meta name="twitter:card" content="summary">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
@@ -43,6 +51,16 @@
   .netpill{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:99px;padding:7px 13px}
   .dot{width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 8px var(--mint)}
 
+  /* ---------- Live bar ---------- */
+  .livebar{display:flex;align-items:center;gap:18px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 16px;font-size:12.5px;color:var(--muted);margin-bottom:6px}
+  .livebar .lb{display:flex;align-items:center;gap:7px;white-space:nowrap}
+  .livebar b{color:var(--text);font-weight:600}
+  .pulse{width:8px;height:8px;border-radius:50%;background:var(--mint);animation:pl 1.6s ease infinite}
+  @keyframes pl{0%,100%{box-shadow:0 0 0 0 rgba(52,245,197,.5)}50%{box-shadow:0 0 0 6px rgba(52,245,197,0)}}
+  .ticker{overflow:hidden;flex:1;min-width:200px}
+  .ticker span{display:inline-block;animation:fadeSlide .5s ease}
+  @keyframes fadeSlide{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
   /* ---------- Hero ---------- */
   .hero{text-align:center;padding:44px 0 34px}
   .hero h1{font-size:clamp(30px,5vw,46px);font-weight:700;letter-spacing:-.5px;line-height:1.12}
@@ -51,8 +69,17 @@
   .builtline{display:inline-flex;align-items:center;gap:8px;margin-top:20px;font-size:12.5px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:8px 16px;background:var(--card)}
   .builtline b{color:var(--text);font-weight:600}
 
+  /* ---------- Steps ---------- */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:800px;margin:30px auto 0}
+  @media(max-width:640px){.steps{grid-template-columns:1fr}}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;text-align:left;font-size:13px;color:var(--muted);transition:.2s}
+  .step:hover{transform:translateY(-3px);border-color:var(--mint-d)}
+  .step b{display:block;color:var(--text);margin:8px 0 4px;font-size:14px}
+  .stepn{width:26px;height:26px;border-radius:8px;background:rgba(52,245,197,.12);color:var(--mint);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+
   /* ---------- Cards & forms ---------- */
-  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px;animation:cardIn .45s ease}
+  @keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:640px){.grid2{grid-template-columns:1fr}}
   label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin:0 0 6px 2px;letter-spacing:.3px}
@@ -99,6 +126,23 @@
   .amtprev{background:var(--bg2);border:1px dashed var(--line);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--muted);margin-top:4px}
   .amtprev code{color:var(--mint);font-weight:600;font-size:14px}
 
+  /* ---------- faq ---------- */
+  .faq{max-width:760px;margin:38px auto 0}
+  .faq details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-bottom:10px}
+  .faq details[open]{border-color:var(--mint-d)}
+  .faq summary{cursor:pointer;font-weight:600;font-size:14px;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  .faq summary::-webkit-details-marker{display:none}
+  .faq summary::after{content:"+";color:var(--mint);font-size:18px;font-weight:600}
+  .faq details[open] summary::after{content:"–"}
+  .faq p{color:var(--muted);font-size:13.5px;margin-top:8px;line-height:1.6}
+
+  /* ---------- stat cards ---------- */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  @media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .stat .sv{font-family:'Space Grotesk';font-size:22px;font-weight:700}
+  .stat .sk{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-top:2px}
+
   /* ---------- table ---------- */
   table{width:100%;border-collapse:collapse;font-size:13.5px}
   th{color:var(--muted);font-weight:600;text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.7px;padding:10px 12px;border-bottom:1px solid var(--line)}
@@ -140,10 +184,11 @@
   .rc .stamp{display:inline-block;border:2px solid #0FBF95;color:#0FBF95;font-weight:700;letter-spacing:2px;border-radius:8px;padding:3px 12px;font-size:12px;transform:rotate(-3deg);margin-top:8px}
   .rc .rfoot{color:#8A94A6;font-size:10.5px;margin-top:16px;border-top:1px solid #E7EAF0;padding-top:10px}
 
-  /* ---------- toast / spinner ---------- */
+  /* ---------- toast / spinner / confetti ---------- */
   #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line);color:var(--text);padding:11px 20px;border-radius:11px;font-size:13.5px;z-index:99;display:none;box-shadow:0 8px 30px rgba(0,0,0,.4)}
   .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.25);border-top-color:var(--mint);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
   @keyframes sp{to{transform:rotate(360deg)}}
+  #confetti{position:fixed;inset:0;pointer-events:none;z-index:200}
 
   /* ---------- footer ---------- */
   footer{border-top:1px solid var(--line);margin-top:40px;padding:26px 0 34px;color:var(--muted);font-size:12px}
@@ -185,12 +230,25 @@
     </div>
   </nav>
 
+  <div class="livebar" id="livebar">
+    <div class="lb"><span class="pulse"></span><b>LIVE</b></div>
+    <div class="lb">Block <b id="lb-block">—</b></div>
+    <div class="lb">Gas <b id="lb-gas">—</b></div>
+    <div class="lb">Est. fee <b id="lb-fee">—</b></div>
+    <div class="ticker lb" id="lb-tick"><span>Watching Arc for stablecoin transfers…</span></div>
+  </div>
+
   <!-- =============== CREATE =============== -->
   <section id="view-create" class="view on">
     <div class="hero">
       <h1>Get paid in stablecoins.<br><em>Prove it forever.</em></h1>
       <p>Payproof turns any wallet address into an invoicing tool. Create an invoice, share a link or QR, receive USDC or EURC, and hand your client a receipt anyone can verify onchain.</p>
       <div class="builtline">⛓ <b>Built on Arc Network</b> · dollar-denominated fees, sub-second blocks</div>
+      <div class="steps">
+        <div class="step"><div class="stepn">1</div><b>Create</b>Fill in amount &amp; description — the invoice is packed into a shareable link. Nothing is uploaded anywhere.</div>
+        <div class="step"><div class="stepn">2</div><b>Share</b>Send the link or QR. Your client pays in one click — gas is USDC too, so one token does it all.</div>
+        <div class="step"><div class="stepn">3</div><b>Get proof</b>Payproof spots the payment onchain, flips the invoice to PAID and issues a verifiable receipt.</div>
+      </div>
     </div>
 
     <div class="split">
@@ -245,12 +303,25 @@
         <div class="hint" style="margin-top:16px">Currently running on Arc Testnet. Get free test USDC/EURC at <a href="https://faucet.circle.com" target="_blank" rel="noopener">faucet.circle.com</a>.</div>
       </div>
     </div>
+
+    <div class="faq">
+      <h3 style="text-align:center;margin-bottom:14px">FAQ</h3>
+      <details><summary>Where is my invoice data stored?</summary><p>Inside the link itself, plus a private copy in your browser's local storage. Payproof has no servers and no database — there is nothing to hack, leak, or shut down.</p></details>
+      <details><summary>How does Payproof know an invoice was paid?</summary><p>Every invoice carries a unique micro-amount reference in its final decimals (like a bank payment reference). Payproof scans the token's Transfer logs on Arc for your address and that exact amount — an exact match settles the invoice. No oracle, no webhook, no trust required.</p></details>
+      <details><summary>Can Payproof access my funds?</summary><p>No. Payments travel wallet-to-wallet on Arc. Payproof never holds, routes, or controls funds, and it never sees your private keys.</p></details>
+      <details><summary>Is this real money?</summary><p>Not yet — Payproof currently runs on Arc Testnet, so tokens have no real-world value. The flow is identical to how it would work on mainnet.</p></details>
+      <details><summary>What does it cost?</summary><p>Payproof is free. The only cost is Arc network gas — paid in USDC, roughly a cent per transaction.</p></details>
+    </div>
   </section>
 
   <!-- =============== LIST =============== -->
   <section id="view-list" class="view">
     <div class="card">
-      <h3 style="margin-bottom:14px">My invoices</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+        <h3>My invoices</h3>
+        <button class="btn btn-ghost btn-sm" onclick="exportCSV()">Export CSV ⬇</button>
+      </div>
+      <div class="stats" id="statcards"></div>
       <div style="overflow-x:auto">
         <table id="invtable">
           <thead><tr>
@@ -286,6 +357,11 @@
       <div>
         <div class="brand" style="font-size:16px">Payproof</div>
         <div style="margin-top:6px">Invoices &amp; verifiable receipts.<br>Our app is built on Arc.</div>
+        <div style="margin-top:10px;display:flex;gap:14px">
+          <a href="https://testnet.arcscan.app" target="_blank" rel="noopener">Explorer</a>
+          <a href="https://faucet.circle.com" target="_blank" rel="noopener">Faucet</a>
+          <a href="https://github.com/Kriptoboss/payproof" target="_blank" rel="noopener">Source</a>
+        </div>
       </div>
       <div class="legal">
         Payproof is an independent application built on Arc Network ("Arc"), the stablecoin-native Layer-1 blockchain. Payproof is not affiliated with, endorsed by, or operated by Circle. Arc is a trademark of Circle Internet Group, Inc. and/or its affiliates. Payproof currently runs on Arc Testnet; testnet tokens have no real-world value. Payproof is self-custodial software — it never holds, transmits, or controls user funds.
@@ -320,6 +396,7 @@
   </div>
 </div>
 
+<canvas id="confetti"></canvas>
 <div id="toast"></div>
 
 <script>
@@ -350,6 +427,7 @@ const CFG = {
   },
   blockTimeSec: 0.5,
   maxScanBlocks: 1000000,   // hard cap for log scans (~5.8 days of blocks)
+  quickScanBlocks: 4000,    // light scan window for auto-polling (~33 min)
   chunk: 40000
 };
 
@@ -434,6 +512,56 @@ function updateStored(id, patch) {
   if (i >= 0) { Object.assign(list[i], patch); saveStore(list); }
 }
 
+/* ---------------- confetti ---------------- */
+function confetti() {
+  const cv = $("confetti"); if (!cv) return;
+  const ctx = cv.getContext("2d");
+  cv.width = innerWidth; cv.height = innerHeight;
+  const cols = ["#34F5C5", "#7C8CFF", "#FFC24B", "#FF6B6B", "#4A9FFF"];
+  const ps = Array.from({ length: 130 }, () => ({
+    x: Math.random() * cv.width, y: -20 - Math.random() * cv.height * 0.4,
+    r: 3 + Math.random() * 4, c: cols[(Math.random() * cols.length) | 0],
+    vy: 2 + Math.random() * 3.5, vx: -1.5 + Math.random() * 3, a: Math.random() * 6.28
+  }));
+  let t = 0;
+  (function fr() {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ps.forEach((p) => {
+      p.y += p.vy; p.x += p.vx; p.a += 0.1;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a);
+      ctx.fillStyle = p.c; ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); ctx.restore();
+    });
+    if (++t < 170) requestAnimationFrame(fr);
+    else ctx.clearRect(0, 0, cv.width, cv.height);
+  })();
+}
+
+/* ---------------- live network stats ---------------- */
+let _statsBusy = false;
+async function pollStats() {
+  if (_statsBusy) return; _statsBusy = true;
+  try {
+    await withProvider(async (p) => {
+      const [bn, gp] = await Promise.all([p.getBlockNumber(), p.send("eth_gasPrice", [])]);
+      $("lb-block").textContent = bn.toLocaleString("en-US");
+      const gwei = Number(ethers.getBigInt(gp)) / 1e9;
+      $("lb-gas").textContent = gwei.toFixed(0) + " Gwei";
+      $("lb-fee").textContent = "$" + (gwei * 21000 / 1e9).toFixed(5) + "/tx";
+      const logs = await p.getLogs({
+        address: CFG.tokens.USDC.addr,
+        fromBlock: Math.max(0, bn - 1200), toBlock: bn,
+        topics: [TRANSFER_TOPIC]
+      });
+      if (logs.length) {
+        const lg = logs[logs.length - 1];
+        const amt = ethers.formatUnits(ethers.getBigInt(lg.data), 6);
+        $("lb-tick").innerHTML = `<span>Latest USDC transfer: <b>${(+amt).toLocaleString("en-US", { maximumFractionDigits: 2 })} USDC</b>&nbsp;· ${short("0x" + lg.topics[1].slice(26))} → ${short("0x" + lg.topics[2].slice(26))}</span>`;
+      }
+    });
+  } catch (e) { /* silent — live bar is best-effort */ }
+  _statsBusy = false;
+}
+
 /* ---------------- views ---------------- */
 function showView(name) {
   ["create", "list", "verify", "pay"].forEach((v) => {
@@ -515,8 +643,22 @@ function copyLink() {
 }
 
 /* ---------------- invoice list ---------------- */
+function renderStats(list) {
+  const el = $("statcards"); if (!el) return;
+  if (!list.length) { el.innerHTML = ""; return; }
+  const paid = list.filter((x) => x.status === "paid");
+  const sum = (arr, tok) => arr.filter((x) => x.tok === tok).reduce((a, x) => a + parseFloat(x.amt), 0);
+  const f = (n) => n.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  el.innerHTML = `
+    <div class="stat"><div class="sv">${list.length}</div><div class="sk">Invoices</div></div>
+    <div class="stat"><div class="sv">${paid.length}</div><div class="sk">Paid</div></div>
+    <div class="stat"><div class="sv">${f(sum(paid, "USDC"))}</div><div class="sk">USDC collected</div></div>
+    <div class="stat"><div class="sv">${f(sum(paid, "EURC"))}</div><div class="sk">EURC collected</div></div>`;
+}
+
 function renderList() {
   const list = store();
+  renderStats(list);
   $("invempty").style.display = list.length ? "none" : "block";
   $("invtable").style.display = list.length ? "table" : "none";
   $("invrows").innerHTML = list.map((x) => `
@@ -546,6 +688,20 @@ function copyInvLink(id) {
 function delInv(id) {
   saveStore(store().filter((i) => i.id !== id)); renderList();
 }
+function exportCSV() {
+  const list = store(); if (!list.length) return toast("Nothing to export yet.");
+  const head = ["id", "description", "amount", "token", "created_utc", "status", "tx_hash", "paid_at_utc"];
+  const rows = list.map((x) => [
+    x.id, '"' + String(x.desc).replace(/"/g, '""') + '"', x.amt, x.tok,
+    new Date(x.ts * 1000).toISOString(), x.status, x.tx || "",
+    x.paidAt ? new Date(x.paidAt * 1000).toISOString() : ""
+  ]);
+  const csv = [head.join(","), ...rows.map((r) => r.join(","))].join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  a.download = "payproof-invoices.csv"; a.click();
+  toast("CSV exported ✓");
+}
 async function checkFromList(id) {
   const x = store().find((i) => i.id === id); if (!x) return;
   const btn = $("chk-" + id);
@@ -555,6 +711,7 @@ async function checkFromList(id) {
     if (hit) {
       updateStored(id, { status: "paid", tx: hit.txHash, paidAt: hit.time });
       toast("✅ Payment found onchain!");
+      confetti();
     } else {
       toast("No matching payment yet. (Scanned recent Arc blocks.)");
     }
@@ -568,13 +725,15 @@ async function checkFromList(id) {
    Scans ERC-20 Transfer logs on Arc for (token, to, exact value).
    The exact value carries the invoice's unique reference digits,
    so a match is cryptographically tied to one specific invoice. */
-async function findPayment(inv) {
+async function findPayment(inv, quick) {
   const tok = CFG.tokens[inv.tok]; if (!tok) return null;
   const expected = ethers.parseUnits(inv.amt, tok.dec);
   return withProvider(async (p) => {
     const latest = await p.getBlockNumber();
     const age = Math.floor(Date.now() / 1000) - inv.ts;
-    const span = Math.min(CFG.maxScanBlocks, Math.ceil(age / CFG.blockTimeSec) + 14400);
+    const span = quick
+      ? CFG.quickScanBlocks
+      : Math.min(CFG.maxScanBlocks, Math.ceil(age / CFG.blockTimeSec) + 14400);
     const start = Math.max(0, latest - span);
     let chunk = CFG.chunk;
     let hi = latest;
@@ -611,7 +770,7 @@ async function findPayment(inv) {
 }
 
 /* ---------------- pay view ---------------- */
-let _payInv = null;
+let _payInv = null, _pollTimer = null, _polling = false;
 function renderPay(inv) {
   _payInv = inv;
   const t = CFG.tokens[inv.tok] || CFG.tokens.USDC;
@@ -621,7 +780,7 @@ function renderPay(inv) {
       <div class="hint" style="letter-spacing:1px;text-transform:uppercase">Invoice ${esc(inv.id)} · from</div>
       <h2 style="margin-top:2px">${esc(inv.iss)}</h2>
       <div class="payamt">${esc(inv.amt)}<span>${esc(t.sym)}</span></div>
-      <div id="paystatus"><span class="badge b-unpaid">○ Awaiting payment</span></div>
+      <div id="paystatus"><span class="badge b-unpaid">○ Awaiting payment · auto-checking</span></div>
     </div>
     <div class="kv"><div class="k">Description</div><div class="v">${esc(inv.desc)}</div></div>
     ${inv.pyr ? `<div class="kv"><div class="k">Billed to</div><div class="v">${esc(inv.pyr)}</div></div>` : ""}
@@ -639,7 +798,28 @@ function renderPay(inv) {
     $("payout").innerHTML = `<div class="refbox">⚠️ Opened as a local file (<b>file://</b>) — wallets like MetaMask can't connect here. Run <code>python -m http.server</code> in this folder and open <code>http://localhost:8000</code>, or host the file online. Status checking &amp; verification still work.</div>`;
   }
   showView("pay");
-  checkPayView(true); // silent auto-check on load
+  checkPayView(true); // full silent check on load
+  // gentle auto-polling: light scan of recent blocks every 7s until paid
+  clearInterval(_pollTimer);
+  _pollTimer = setInterval(async () => {
+    if (_polling || !_payInv) return;
+    _polling = true;
+    try { await checkPayView(true, true); } finally { _polling = false; }
+  }, 7000);
+}
+
+function markPaidUI(hit) {
+  clearInterval(_pollTimer);
+  $("paystatus").innerHTML = '<span class="badge b-paid">● Paid</span>';
+  const pb = $("paybtn"); if (pb) pb.style.display = "none";
+  const cb = $("paychk"); if (cb) cb.style.display = "none";
+  $("payout").innerHTML = `
+    <div class="refbox" style="border-color:rgba(52,245,197,.35);background:rgba(52,245,197,.07)">
+      ✅ Payment settled onchain. Tx:
+      <a class="mono" href="${CFG.explorer}/tx/${hit.txHash}" target="_blank" rel="noopener">${short(hit.txHash)}</a>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="openReceiptFromTx('${hit.txHash}')">View &amp; download receipt 🧾</button>`;
+  confetti();
 }
 
 async function ensureArcNetwork(eth) {
@@ -688,14 +868,7 @@ async function payNow() {
     const rc = await tx.wait();
 
     updateStored(inv.id, { status: "paid", tx: rc.hash, paidAt: Math.floor(Date.now() / 1000) });
-    $("paystatus").innerHTML = '<span class="badge b-paid">● Paid</span>';
-    btn.style.display = "none"; $("paychk").style.display = "none";
-    $("payout").innerHTML = `
-      <div class="refbox" style="border-color:rgba(52,245,197,.35);background:rgba(52,245,197,.07)">
-        ✅ Payment settled. Tx:
-        <a class="mono" href="${CFG.explorer}/tx/${rc.hash}" target="_blank" rel="noopener">${short(rc.hash)}</a>
-      </div>
-      <button class="btn btn-primary btn-block" onclick="openReceiptFromTx('${rc.hash}')">View &amp; download receipt 🧾</button>`;
+    markPaidUI({ txHash: rc.hash });
     toast("✅ Paid — settled in seconds on Arc.");
   } catch (e) {
     console.error(e);
@@ -707,23 +880,15 @@ async function payNow() {
   }
 }
 
-async function checkPayView(silent) {
+async function checkPayView(silent, quick) {
   const inv = _payInv; if (!inv) return;
   const btn = $("paychk");
   if (!silent && btn) { btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Scanning Arc…'; }
   try {
-    const hit = await findPayment(inv);
+    const hit = await findPayment(inv, quick);
     if (hit) {
       updateStored(inv.id, { status: "paid", tx: hit.txHash, paidAt: hit.time });
-      $("paystatus").innerHTML = '<span class="badge b-paid">● Paid</span>';
-      const pb = $("paybtn"); if (pb) pb.style.display = "none";
-      if (btn) btn.style.display = "none";
-      $("payout").innerHTML = `
-        <div class="refbox" style="border-color:rgba(52,245,197,.35);background:rgba(52,245,197,.07)">
-          ✅ Payment found onchain. Tx:
-          <a class="mono" href="${CFG.explorer}/tx/${hit.txHash}" target="_blank" rel="noopener">${short(hit.txHash)}</a>
-        </div>
-        <button class="btn btn-primary btn-block" onclick="openReceiptFromTx('${hit.txHash}')">View &amp; download receipt 🧾</button>`;
+      markPaidUI(hit);
     } else if (!silent) {
       toast("No matching payment found yet.");
     }
@@ -828,12 +993,20 @@ function printVerify() {
       const inv = b64uDec(m[1]);
       if (inv && inv.v === 1 && ethers.isAddress(inv.to) && CFG.tokens[inv.tok] && /^\d+(\.\d{1,6})?$/.test(inv.amt)) {
         renderPay(inv);
-        return;
+      } else {
+        toast("⚠️ This invoice link is invalid or corrupted.");
+        showView("create");
       }
-    } catch (e) { console.warn("Bad invoice payload", e); }
-    toast("⚠️ This invoice link is invalid or corrupted.");
+    } catch (e) {
+      console.warn("Bad invoice payload", e);
+      toast("⚠️ This invoice link is invalid or corrupted.");
+      showView("create");
+    }
+  } else {
+    showView("create");
   }
-  showView("create");
+  pollStats();
+  setInterval(pollStats, 7000);
 })();
 window.addEventListener("hashchange", () => location.reload());
 </script>
