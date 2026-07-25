@@ -306,8 +306,9 @@
 
     <div class="faq">
       <h3 style="text-align:center;margin-bottom:14px">FAQ</h3>
-      <details><summary>Where is my invoice data stored?</summary><p>Inside the link itself, plus a private copy in your browser's local storage. Payproof has no servers and no database — there is nothing to hack, leak, or shut down.</p></details>
+      <details><summary>Where is my invoice data stored?</summary><p>Inside the link itself, plus a private copy in your browser's local storage. Payproof has no servers and no database — there is nothing to hack, leak, or shut down. Connect your wallet on the My invoices tab to load your full payment history on any device.</p></details>
       <details><summary>How does Payproof know an invoice was paid?</summary><p>Every invoice carries a unique micro-amount reference in its final decimals (like a bank payment reference). Payproof scans the token's Transfer logs on Arc for your address and that exact amount — an exact match settles the invoice. No oracle, no webhook, no trust required.</p></details>
+      <details><summary>Do I need an account?</summary><p>No. Your wallet is your identity. Anything you're owed lives onchain, so connecting your wallet from any browser or device restores your received-payments history instantly.</p></details>
       <details><summary>Can Payproof access my funds?</summary><p>No. Payments travel wallet-to-wallet on Arc. Payproof never holds, routes, or controls funds, and it never sees your private keys.</p></details>
       <details><summary>Is this real money?</summary><p>Not yet — Payproof currently runs on Arc Testnet, so tokens have no real-world value. The flow is identical to how it would work on mainnet.</p></details>
       <details><summary>What does it cost?</summary><p>Payproof is free. The only cost is Arc network gas — paid in USDC, roughly a cent per transaction.</p></details>
@@ -331,6 +332,15 @@
         </table>
       </div>
       <div id="invempty" class="empty">No invoices yet — create your first one. They're stored only in this browser.</div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <h3>Onchain payment history</h3>
+        <button class="btn btn-primary btn-sm" id="connbtn" onclick="loadHistory()">Connect wallet</button>
+      </div>
+      <p class="hint" style="margin-top:6px">No accounts here — your wallet is your identity. Connect to load every USDC/EURC payment your address has received on Arc, from any device or browser. Unpaid invoices matching an onchain payment are settled automatically.</p>
+      <div id="histout" style="margin-top:14px"></div>
     </div>
   </section>
 
@@ -403,8 +413,8 @@
 "use strict";
 /* ============================================================
    Payproof — invoices & verifiable receipts, built on Arc.
-   Self-custodial, serverless. All state lives in the URL and
-   in this browser's localStorage. No backend, no keys held.
+   Self-custodial, serverless. All state lives in the URL, in
+   this browser's localStorage, and onchain. No backend.
    ============================================================ */
 
 const CFG = {
@@ -419,15 +429,13 @@ const CFG = {
   ],
   explorer: "https://testnet.arcscan.app",
   faucet: "https://faucet.circle.com",
-  // Native gas token on Arc is USDC (18d). App-level transfers use the
-  // official 6-decimal ERC-20 interfaces below (per Arc docs guidance).
   tokens: {
     USDC: { addr: "0x3600000000000000000000000000000000000000", dec: 6, sym: "USDC" },
     EURC: { addr: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", dec: 6, sym: "EURC" }
   },
   blockTimeSec: 0.5,
-  maxScanBlocks: 1000000,   // hard cap for log scans (~5.8 days of blocks)
-  quickScanBlocks: 4000,    // light scan window for auto-polling (~33 min)
+  maxScanBlocks: 1000000,
+  quickScanBlocks: 4000,
   chunk: 40000
 };
 
@@ -511,6 +519,9 @@ function updateStored(id, patch) {
   const i = list.findIndex((x) => x.id === id);
   if (i >= 0) { Object.assign(list[i], patch); saveStore(list); }
 }
+function savedAddr() {
+  try { return localStorage.getItem("payproof.addr") || ""; } catch { return ""; }
+}
 
 /* ---------------- confetti ---------------- */
 function confetti() {
@@ -563,12 +574,21 @@ async function pollStats() {
 }
 
 /* ---------------- views ---------------- */
+let _histLoaded = false;
 function showView(name) {
   ["create", "list", "verify", "pay"].forEach((v) => {
     const el = $("view-" + v); if (el) el.classList.toggle("on", v === name);
     const tb = $("tab-" + v); if (tb) tb.classList.toggle("on", v === name);
   });
-  if (name === "list") renderList();
+  if (name === "list") {
+    renderList();
+    const a = savedAddr();
+    if (a && !_histLoaded) {
+      _histLoaded = true;
+      $("connbtn").textContent = short(a);
+      renderHistory(a);
+    }
+  }
 }
 function closeModal(id) { $(id).classList.remove("on"); }
 
@@ -719,6 +739,122 @@ async function checkFromList(id) {
     console.error(e); toast("⚠️ RPC error while scanning — try again.");
   }
   renderList();
+}
+
+/* ---------------- wallet history (device-independent) ----------------
+   Your wallet is your identity: pulls every incoming USDC/EURC transfer
+   for the connected address from Arc — explorer API first (full history,
+   one call), raw RPC log scan as fallback. */
+async function loadHistory() {
+  const eth = getWallet();
+  if (!eth) return toast("⚠️ No browser wallet detected — install MetaMask first.");
+  try {
+    const accs = await eth.request({ method: "eth_requestAccounts" });
+    const addr = ethers.getAddress(accs[0]);
+    try { localStorage.setItem("payproof.addr", addr); } catch {}
+    $("connbtn").textContent = short(addr);
+    _histLoaded = true;
+    await renderHistory(addr);
+  } catch (e) { toast("⚠️ Wallet connection rejected."); }
+}
+
+async function renderHistory(addr) {
+  const out = $("histout");
+  out.innerHTML = `<div class="empty"><span class="spin"></span> Loading payments received by ${short(addr)} from Arc…</div>`;
+  let items = null;
+  try { items = await historyFromExplorer(addr); } catch (e) { console.warn("Explorer API unavailable, falling back to RPC", e); }
+  if (!items) { try { items = await historyFromRPC(addr); } catch (e) { console.error(e); } }
+  if (!items) {
+    out.innerHTML = '<div class="refbox">⚠️ Could not load history right now — try again in a moment.</div>';
+    return;
+  }
+  if (!items.length) {
+    out.innerHTML = `<div class="empty">No incoming USDC/EURC payments found for ${short(addr)} yet.</div>`;
+    return;
+  }
+  // auto-settle local unpaid invoices that match an onchain payment
+  const list = store(); let changed = 0;
+  list.forEach((x) => {
+    if (x.status !== "paid" && x.to && x.to.toLowerCase() === addr.toLowerCase()) {
+      const m = items.find((i) => i.token === x.tok && i.amount === x.amt);
+      if (m) { Object.assign(x, { status: "paid", tx: m.tx, paidAt: m.time || null }); changed++; }
+    }
+  });
+  if (changed) { saveStore(list); renderList(); toast(`✅ ${changed} invoice(s) matched to onchain payments.`); confetti(); }
+
+  out.innerHTML = `
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Date</th><th>Amount</th><th>From</th><th>Tx</th><th style="text-align:right"></th></tr></thead>
+      <tbody>${items.slice(0, 30).map((i) => `
+        <tr>
+          <td style="color:var(--muted)">${i.time ? fmtDate(i.time) : "—"}</td>
+          <td><b>${esc(i.amount)}</b> ${esc(i.token)}</td>
+          <td class="mono">${short(i.from)}</td>
+          <td class="mono"><a href="${CFG.explorer}/tx/${esc(i.tx)}" target="_blank" rel="noopener">${short(i.tx)}</a></td>
+          <td style="text-align:right"><button class="btn btn-ghost btn-sm" onclick="openReceiptFromTx('${esc(i.tx)}')">Receipt</button></td>
+        </tr>`).join("")}
+      </tbody></table></div>
+    ${items.length > 30 ? `<div class="hint" style="margin-top:8px">Showing latest 30 of ${items.length} payments.</div>` : ""}`;
+}
+
+async function historyFromExplorer(addr) {
+  const r = await fetch(`${CFG.explorer}/api/v2/addresses/${addr}/token-transfers?type=ERC-20&filter=to`, { headers: { accept: "application/json" } });
+  if (!r.ok) throw new Error("explorer api " + r.status);
+  const j = await r.json();
+  const known = {}; Object.values(CFG.tokens).forEach((t) => (known[t.addr.toLowerCase()] = t));
+  return (j.items || []).map((it) => {
+    const taddr = String((it.token && (it.token.address_hash || it.token.address)) || "").toLowerCase();
+    const t = known[taddr]; if (!t) return null;
+    const raw = it.total && it.total.value; if (raw == null) return null;
+    const dec = it.total.decimals != null ? Number(it.total.decimals) : t.dec;
+    const tx = it.transaction_hash || it.tx_hash || ""; if (!tx) return null;
+    return {
+      token: t.sym,
+      amount: ethers.formatUnits(BigInt(raw), dec),
+      from: (it.from && it.from.hash) || "",
+      tx,
+      time: it.timestamp ? Math.floor(new Date(it.timestamp).getTime() / 1000) : null
+    };
+  }).filter(Boolean);
+}
+
+async function historyFromRPC(addr) {
+  return withProvider(async (p) => {
+    const latest = await p.getBlockNumber();
+    const start = Math.max(0, latest - CFG.maxScanBlocks);
+    const res = [];
+    for (const t of Object.values(CFG.tokens)) {
+      let chunk = CFG.chunk, hi = latest;
+      while (hi >= start) {
+        const lo = Math.max(start, hi - chunk + 1);
+        let logs;
+        try {
+          logs = await p.getLogs({ address: t.addr, fromBlock: lo, toBlock: hi, topics: [TRANSFER_TOPIC, null, ethers.zeroPadValue(addr, 32)] });
+        } catch (e) {
+          if (chunk > 2500) { chunk = Math.floor(chunk / 2); continue; }
+          throw e;
+        }
+        logs.forEach((lg) => res.push({
+          token: t.sym,
+          amount: ethers.formatUnits(ethers.getBigInt(lg.data), t.dec),
+          from: ethers.getAddress("0x" + lg.topics[1].slice(26)),
+          tx: lg.transactionHash,
+          time: null, block: lg.blockNumber
+        }));
+        hi = lo - 1;
+      }
+    }
+    res.sort((a, b) => (b.block || 0) - (a.block || 0));
+    const cache = {};
+    for (const it of res.slice(0, 30)) {
+      if (cache[it.block] === undefined) {
+        try { const b = await p.getBlock(it.block); cache[it.block] = b ? Number(b.timestamp) : null; }
+        catch { cache[it.block] = null; }
+      }
+      it.time = cache[it.block];
+    }
+    return res;
+  });
 }
 
 /* ---------------- payment detection ----------------
